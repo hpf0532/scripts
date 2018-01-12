@@ -11,7 +11,7 @@ import hashlib
 import re
 
 env.user='root'
-env.hosts=['192.168.1.151']
+env.hosts=['192.168.1.161']
 env.local_path='/root/project/'
 env.remote_base_path='/root/project'
 env.remote_dir='/opt/tomcat'
@@ -97,12 +97,12 @@ def deploy(war):
 def restart_serv():
     print(red('重启tomcat!'))
     with settings(warn_only=True):
-        result = run('/etc/init.d/tomcat stop')
+        result = run('set -m;/etc/init.d/tomcat stop')
 #        result = run('set -m;/opt/tomcat/bin/shutdown.sh')
     if result.failed and not confirm('Command failed.Continue anyway?'):
         abort('Aborting at user request.')
     time.sleep(3)
-    run('/etc/init.d/tomcat start')
+    run('set -m;/etc/init.d/tomcat start')
 
 @task
 def production():
