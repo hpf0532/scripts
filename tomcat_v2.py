@@ -11,11 +11,11 @@ import hashlib
 import re
 
 env.user='root'
-env.hosts=['192.168.1.161']
+env.hosts=['192.168.1.162']
 env.local_path='/root/project/'
 env.remote_base_path='/root/project'
 env.remote_dir='/opt/tomcat'
-env.dir_dict={'backend':'webapps_bd', 'h5pay':'webapps_h5_pay', 'posmerchant':'webapps_pos'}
+env.dir_dict={'backend':'webapps_bd', 'h5pay':'webapps_h5_pay', 'posmerchant':'webapps_pos', 'bdapi': 'webapps_bd'}
 
 pack = raw_input('请输入包名: ').strip()
 print pack
@@ -52,7 +52,20 @@ def roll_back():
 def backup():
     print(yellow('备份...'))
     with cd(app_dir):
-        rootmd5 = run('md5sum %s' % 'ROOT.war').split(' ')[0]
+        if pg_prefix == 'bdapi':
+            exist_test = run('ls -l api.war | wc -l')
+            print 'api.war数量：', exist_test
+            if exist_test == '1':
+                rootmd5 = run('md5sum %s' % 'api.war').split(' ')[0]
+            else:
+                return
+        else:
+            exist_test1 = run('ls -l ROOT.war | wc -l')
+            print 'ROOT.war数量：', exist_test1
+            if exist_test1 == '1':
+                rootmd5 = run('md5sum %s' % 'ROOT.war').split(' ')[0]
+            else:
+                return
         print '====================================================='
     with cd(remote_dir):
         print 'rootmd5', rootmd5
@@ -87,22 +100,27 @@ def pack_validate():
 @task
 def deploy(war):
     with cd(app_dir):
-        run('rm -rf ROOT*')
-        root_war = '%s%s' %(remote_dir, war)
-        print root_war
-        run('cp %s ./ROOT.war' % root_war) 
+        if pg_prefix == 'bdapi':
+            run('rm -rf api*')
+            root_war = '%s%s' % (remote_dir, war)
+            run('cp %s ./api.war' % root_war)
+        else:
+            run('rm -rf ROOT*')
+            root_war = '%s%s' %(remote_dir, war)
+            print root_war
+            run('cp %s ./ROOT.war' % root_war)
     print(yellow('部署成功！准备重启服务。。。'))
 
 @task
 def restart_serv():
     print(red('重启tomcat!'))
     with settings(warn_only=True):
-        result = run('set -m;/etc/init.d/tomcat stop')
+        result = run('/etc/init.d/tomcat stop')
 #        result = run('set -m;/opt/tomcat/bin/shutdown.sh')
     if result.failed and not confirm('Command failed.Continue anyway?'):
         abort('Aborting at user request.')
-    time.sleep(3)
-    run('set -m;/etc/init.d/tomcat start')
+    time.sleep(10)
+#    run('/etc/init.d/tomcat start')
 
 @task
 def production():
@@ -110,11 +128,15 @@ def production():
     put_package()
     pack_validate()
     deploy(red_war)
-    restart_serv()
+#    restart_serv()
 
 @task
 def rollback():
     roll_back()
     backup()
     deploy(rollback_ver)
+#    restart_serv()
+
+@task
+def restart():
     restart_serv()
