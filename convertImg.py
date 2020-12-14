@@ -77,6 +77,10 @@ class ImageHandler(object):
 
 
 if __name__ == '__main__':
-    i = ImageHandler(r'E:\0印过书的书法集\下卷\新建文件夹')
-    i.zoom()
+    # i = ImageHandler(r'E:\0印过书的书法集\下卷\新建文件夹')
+    # i.zoom()
 
+    path = r'E:\168.aa.jpg'
+    img = Image.open(path)
+    img.thumbnail((987, 640))
+    img.save(path, 'JPEG')
